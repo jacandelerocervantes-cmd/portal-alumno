@@ -1,0 +1,113 @@
+/* src/components/alumno/AlumnoActividadCard.css */
+.alumno-actividad-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md, 1rem);
+  padding: 0; /* Quitamos padding del 'card' base */
+  border-width: 1px;
+  border-left: 5px solid var(--color-primary, #005A9C);
+}
+
+.card-header, .card-body, .card-footer, .card-actions {
+  padding: var(--spacing-md, 1rem) var(--spacing-lg, 1.5rem);
+}
+
+/* Header */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #eee;
+  padding-top: var(--spacing-sm, 0.75rem);
+  padding-bottom: var(--spacing-sm, 0.75rem);
+}
+
+.unidad-tag {
+  background-color: var(--color-secondary, #00BFFF);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+}
+.status-badge svg {
+  font-size: 0.9rem;
+}
+
+.status-calificado { background-color: #e6f7eb; color: #006421; }
+.status-calificado .icon-success { color: #006421; }
+
+.status-entregado { background-color: #e6f0ff; color: #004a80; }
+.status-entregado .icon-pending { color: #004a80; }
+
+.status-pendiente { background-color: #fffbeb; color: #b45309; }
+.status-pendiente .icon-warning { color: #b45309; }
+
+.status-vencido { background-color: #ffeeeb; color: #a51800; }
+.status-vencido .icon-danger { color: #a51800; }
+
+/* Body */
+.card-body h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--color-primary, #005A9C);
+}
+.card-body .descripcion {
+  font-size: 0.95rem;
+  color: #555;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Footer */
+.card-footer {
+  display: flex;
+  gap: 1.5rem;
+  background-color: #fdfdfd;
+  border-top: 1px solid #f0f0f0;
+  font-size: 0.9rem;
+}
+.footer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.footer-info strong {
+  color: #333;
+}
+.footer-info span {
+  color: #666;
+}
+
+/* Actions */
+.card-actions {
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.calificacion-badge {
+  font-size: 1.1rem;
+  color: #333;
+}
+.calificacion-badge strong {
+  color: var(--color-primary, #005A9C);
+  font-size: 1.25rem;
+}
+
+.card-actions .btn-primary:disabled {
+  background-color: #aaa;
+  cursor: not-allowed;
+  opacity: 0.7;
+}

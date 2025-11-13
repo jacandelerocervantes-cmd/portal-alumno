@@ -1,0 +1,53 @@
+/* src/components/examen/OpcionMultiplePlayer.css */
+.opcion-multiple-player {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: var(--spacing-lg, 1.5rem);
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.pregunta-texto {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333;
+    line-height: 1.4;
+    margin-bottom: var(--spacing-xl, 2rem);
+    text-align: center;
+}
+
+.opciones-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md, 1rem);
+}
+
+.opcion-item {
+    display: block;
+    width: 100%;
+    padding: 1.25rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+    text-align: left;
+    color: #444;
+    background-color: #f9fafb;
+    border: 2px solid var(--color-border, #eee);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.opcion-item:hover {
+    border-color: var(--color-secondary, #00BFFF);
+    background-color: #f0faff;
+}
+
+.opcion-item.selected {
+    border-color: var(--color-primary, #005A9C);
+    background-color: #e6f0ff;
+    color: var(--color-primary, #005A9C);
+    font-weight: 700;
+    box-shadow: 0 2px 4px rgba(0, 90, 156, 0.1);
+}

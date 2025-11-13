@@ -1,78 +1,79 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
-// import Layout from './components/Layout'; // Copia Layout, Header, Footer de la app docente
+import { useState, useEffect } from 'react'
+import { Routes, Route, useNavigate, Navigate, Outlet } from 'react-router-dom'
+import { supabase } from './supabaseClient'
+import AuthAlumno from './pages/AuthAlumno'
 import AlumnoPortal from './pages/AlumnoPortal';
 import AlumnoDashboard from './pages/AlumnoDashboard';
 import ExamenAlumno from './pages/ExamenAlumno';
-import RevisionExamenAlumno from './pages/RevisionExamenAlumno';
-import { supabase } from './supabaseClient';
+import Layout from './components/Layout'
+import './App.css'
 
-// Guardia de Ruta Protegida (revisa la sesión real de Supabase)
-const AlumnoProtectedRoute = ({ session, loading }) => {
-    if (loading) return <div>Verificando acceso...</div>;
-    // Si hay sesión, muestra el contenido (Outlet). Si no, redirige al login.
-    return session ? <Outlet /> : <Navigate to="/alumno/portal" replace />;
-}
+// Componente "guardián" para rutas privadas
+const RutaProtegida = ({ session }) => {
+  if (!session) {
+    return <Navigate to="/login" replace />;
+  }
+  // Si hay sesión, renderiza el Layout que contiene el Outlet
+  return (
+    <Layout session={session}>
+      <Outlet />
+    </Layout>
+  );
+};
 
 function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    setLoading(true);
-    // 1. Obtener sesión inicial
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      setSession(initialSession);
+    // 1. Intentar obtener la sesión activa al cargar la app
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
       setLoading(false);
-    });
+    };
+    getSession();
 
-    // 2. Escuchar cambios de sesión (Login/Logout)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-      setSession(currentSession);
-    });
+    // 2. Escuchar cambios en la autenticación (Login, Logout)
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        if (_event === 'SIGNED_OUT') {
+          navigate('/login');
+        }
+        if (_event === 'SIGNED_IN') {
+          navigate('/dashboard');
+        }
+      }
+    );
 
-    return () => subscription.unsubscribe();
-  }, []);
+    // 3. Limpiar el listener al desmontar
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [navigate]);
+
+  if (loading) {
+    return <div className="app-loading">Cargando...</div>; // O un spinner
+  }
 
   return (
-    <Router>
-      {/* <Layout session={session}>  El Layout mostrará la UserBar si hay sesión */}
-        <Routes>
-          
-          {/* Rutas Protegidas de Alumno */}
-          <Route element={<AlumnoProtectedRoute session={session} loading={loading} />}>
-            <Route path="/alumno/evaluaciones" element={<AlumnoDashboard />} />
-            <Route path="/alumno/examen/:evaluacionId" element={<ExamenAlumno />} />
-            <Route path="/alumno/revision/:intentoId" element={<RevisionExamenAlumno />} />
-          </Route>
+    <Routes>
+      <Route path="/login" element={!session ? <AuthAlumno /> : <Navigate to="/dashboard" />} />
+      
+      {/* Rutas Privadas */}
+      <Route element={<RutaProtegida session={session} />}>
+        <Route path="/dashboard" element={<AlumnoDashboard />} />
+        <Route path="/materia/:id" element={<AlumnoPortal />} />
+        <Route path="/examen/:id" element={<ExamenAlumno />} />
+        {/* <Route path="/examen/:id/revision" element={<RevisionExamenAlumno />} /> */}
+      </Route>
 
-          {/* Ruta de Login Alumno */}
-          <Route
-            path="/alumno/portal"
-            element={
-              loading ? <div>Cargando...</div> :
-              session ? <Navigate to="/alumno/evaluaciones" replace /> : // Si ya hay sesión, ir a dashboard
-              <AlumnoPortal />
-            }
-          />
-
-          {/* Ruta Raíz (redirige al login si no hay sesión) */}
-          <Route
-            path="/"
-            element={
-              loading ? <div>Cargando...</div> :
-              session ? <Navigate to="/alumno/evaluaciones" replace /> :
-              <Navigate to="/alumno/portal" replace />
-            }
-          />
-          
-          {/* Ruta comodín (404) */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-
-        </Routes>
-      {/* </Layout> */}
-    </Router>
-  );
+      {/* Redirección por defecto */}
+      <Route path="*" element={<Navigate to={session ? "/dashboard" : "/login"} replace />} />
+    </Routes>
+  )
 }
 
 export default App

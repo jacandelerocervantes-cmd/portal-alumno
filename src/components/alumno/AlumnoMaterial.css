@@ -1,0 +1,94 @@
+/* src/components/alumno/AlumnoMaterial.css */
+.alumno-material-panel {
+  width: 100%;
+}
+
+/* Breadcrumbs (igual que en el admin) */
+.material-breadcrumbs {
+  margin-bottom: var(--spacing-lg, 1.5rem);
+  padding-bottom: var(--spacing-md, 1rem);
+  border-bottom: 1px solid #eee;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.breadcrumb-item {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--color-primary-light, #007bff);
+  padding: 0.25rem;
+}
+.breadcrumb-item:hover {
+  text-decoration: underline;
+}
+.breadcrumb-item:disabled {
+  color: #333;
+  font-weight: 600;
+  cursor: default;
+  text-decoration: none;
+}
+.breadcrumb-separator {
+  margin: 0 0.5rem;
+  color: #999;
+  font-size: 1.1rem;
+}
+
+/* Lista de Material (igual que en el admin) */
+.material-list-container {
+  width: 100%;
+}
+.material-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--spacing-md, 1rem);
+}
+.material-item {
+  background-color: #fdfdfd;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  padding: var(--spacing-md, 1rem);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 0.75rem);
+  transition: all 0.2s ease;
+  text-decoration: none;
+  color: #333;
+}
+.material-item.folder {
+  cursor: pointer;
+}
+.material-item:hover {
+  background-color: #f9f9f9;
+  border-color: #ddd;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  transform: translateY(-2px);
+}
+
+.material-item-icon {
+  font-size: 1.75rem;
+  flex-shrink: 0;
+  width: 30px;
+  text-align: center;
+}
+.material-item-icon.folder {
+  color: #FFC107; /* Amarillo Carpeta */
+}
+.material-item-icon.file img {
+  width: 24px;
+  height: 24px;
+}
+.material-item-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  word-break: break-word;
+}
+.material-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #888;
+  font-style: italic;
+  padding: 2rem;
+}

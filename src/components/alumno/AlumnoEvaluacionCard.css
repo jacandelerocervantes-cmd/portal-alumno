@@ -1,0 +1,88 @@
+/* src/components/alumno/AlumnoEvaluacionCard.css */
+.alumno-evaluacion-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg, 1.5rem);
+    padding: var(--spacing-lg, 1.5rem);
+    border-width: 1px;
+}
+
+.eval-card-icon {
+    font-size: 2.5rem;
+    color: var(--color-primary, #005A9C);
+}
+
+.eval-card-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.eval-card-info .unidad-tag {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #555;
+    background-color: #eee;
+    padding: 0.2rem 0.6rem;
+    border-radius: 10px;
+    align-self: flex-start; /* Para que no ocupe todo el ancho */
+}
+
+.eval-card-info h3 {
+    margin: 0.5rem 0;
+    color: #333;
+}
+
+.eval-card-info p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.eval-card-info .status-badge {
+    margin-top: 0.5rem;
+    align-self: flex-start;
+    /* Los estilos de status-badge (colores) se re-utilizan de AlumnoActividadCard.css */
+}
+
+.eval-card-action {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.eval-card-action .calificacion-badge {
+    font-size: 1.1rem;
+    color: #333;
+    text-align: right;
+}
+
+.eval-card-action .calificacion-badge strong {
+    color: var(--color-primary, #005A9C);
+    font-size: 1.5rem;
+}
+
+.eval-card-action .btn {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.95rem;
+    min-width: 180px; /* Ancho mínimo para el botón */
+    text-align: center;
+}
+
+.eval-card-action .btn-warning {
+    background-color: #f0ad4e;
+    color: white;
+}
+.eval-card-action .btn-warning:hover {
+    background-color: #ec971f;
+}
+
+.eval-card-action .btn-success {
+    background-color: #5cb85c;
+    color: white;
+}
+.eval-card-action .btn-success:hover {
+    background-color: #449d44;
+}

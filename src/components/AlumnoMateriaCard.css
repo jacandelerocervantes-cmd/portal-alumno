@@ -1,0 +1,63 @@
+/* src/components/AlumnoMateriaCard.css */
+
+.materia-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.alumno-materia-card {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  border-left: 5px solid var(--color-primary, #005A9C);
+  transition: all 0.2s ease-in-out;
+}
+
+.alumno-materia-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  border-left-color: var(--color-secondary, #00BFFF);
+}
+
+.card-icon {
+  font-size: 2.5rem;
+  color: var(--color-primary, #005A9C);
+  background-color: #f0f6ff;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.card-info {
+  flex: 1;
+}
+
+.card-info h3 {
+  margin: 0 0 0.25rem 0;
+  color: #333;
+}
+
+.card-info p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.card-cta {
+  font-weight: 600;
+  color: var(--color-primary, #005A9C);
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+
+.alumno-materia-card:hover .card-cta {
+  color: var(--color-secondary, #00BFFF);
+}

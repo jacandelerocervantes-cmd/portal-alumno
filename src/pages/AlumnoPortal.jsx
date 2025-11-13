@@ -1,78 +1,127 @@
 // src/pages/AlumnoPortal.jsx
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-// Asegúrate de tener tu supabaseClient en este proyecto
-import { supabase } from '../supabaseClient'; 
-import './AlumnoPortal.css';
- 
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
+import { FaSpinner, FaArrowLeft, FaBook, FaClipboardList, FaFileAlt, FaGraduationCap } from 'react-icons/fa';
+import './AlumnoPortal.css'; 
+
+// --- 1. Importar los componentes de las pestañas ---
+import AlumnoActividades from '../components/alumno/AlumnoActividades'; // <-- AÑADIR ESTE
+import AlumnoEvaluaciones from '../components/alumno/AlumnoEvaluaciones'; // <-- AÑADIR ESTE
+import AlumnoMaterial from '../components/alumno/AlumnoMaterial'; // <-- AÑADIR ESTE
+import AlumnoCalificaciones from '../components/alumno/AlumnoCalificaciones'; // <-- AÑADIR ESTE
+
 const AlumnoPortal = () => {
-    // const [matricula, setMatricula] = useState(''); // Ya no se usa para el login
-    const [correo, setCorreo] = useState('');
-    const [password, setPassword] = useState(''); // Nuevo estado para la contraseña
+    // ... (estados: materia, loading, error, activeTab... sin cambios)
+    const { id: materiaId } = useParams();
+    const navigate = useNavigate();
+    const [materia, setMateria] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const navigate = useNavigate();
+    const [activeTab, setActiveTab] = useState('actividades'); 
 
-    const handleLogin = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
-        try {
-            // ¡ESTE ES EL CAMBIO!
-            // Usamos el login de Supabase Auth.
-            // El 'email' es el correo del alumno.
-            // El 'password' es la matrícula del alumno (según tu función crear-usuario-alumno)
-            const { error: signInError } = await supabase.auth.signInWithPassword({
-                email: correo,
-                password: password, 
-            });
-
-            if (signInError) throw signInError;
-
-            // ¡Éxito! La sesión se maneja automáticamente.
-            // Redirigimos al dashboard de evaluaciones.
-            navigate('/alumno/evaluaciones');
-
-        } catch (err) {
-            console.error("Error en login alumno:", err);
-            if (err.message.includes("Invalid login credentials")) {
-                setError('Correo o contraseña (matrícula) incorrectos.');
-            } else {
-                setError(err.message || 'Error al iniciar sesión.');
+    // ... (useEffect de fetchMateria... sin cambios)
+    useEffect(() => {
+        const fetchMateria = async () => {
+            if (!materiaId) {
+                setError("No se proporcionó un ID de materia.");
+                setLoading(false);
+                return;
             }
-        } finally {
-            setLoading(false);
+            setLoading(true);
+            try {
+                // RLS: "Alumnos pueden ver sus materias inscritas" nos protege
+                const { data, error: materiaError } = await supabase
+                    .from('materias')
+                    .select('*') 
+                    .eq('id', materiaId)
+                    .single();
+
+                if (materiaError) throw materiaError;
+                setMateria(data);
+            } catch (err) {
+                console.error("Error cargando la materia:", err.message);
+                setError("No se pudo cargar la información de la materia.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchMateria();
+    }, [materiaId]);
+
+
+    const renderTabContent = () => {
+        // --- 2. Conectar el componente real ---
+        switch (activeTab) {
+            case 'actividades':
+                return <AlumnoActividades materiaId={materia.id} />;
+            case 'evaluaciones':
+                return <AlumnoEvaluaciones materiaId={materia.id} />; // <-- CONECTADO
+            case 'material':
+                return <AlumnoMaterial materia={materia} />; // <-- CONECTADO
+            case 'calificaciones':
+                return <AlumnoCalificaciones materiaId={materia.id} />; // <-- CONECTADO
+            default:
+                return null;
         }
     };
 
+    // ... (el resto del JSX: loading, error, return... sin cambios)
+    if (loading) {
+        return (
+            <div className="portal-loading">
+                <FaSpinner className="spinner" />
+                <p>Cargando materia...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return <div className="portal-error error-message">{error}</div>;
+    }
+
+    if (!materia) {
+        return <div className="portal-error error-message">Materia no encontrada.</div>;
+    }
+
     return (
-        <div className="auth-container"> {/* Reutilizando clases de Auth.css si existe */}
-            <div className="auth-card card"> {/* Reutilizando clases de Auth.css si existe */}
-                <h2 className="auth-title">Portal del Alumno</h2> {/* Reutilizando clases de Auth.css si existe */}
-                <p className="auth-subtitle">Ingresa con tu correo y contraseña (tu matrícula).</p> {/* Reutilizando clases de Auth.css si existe */}
-                {error && <p style={{ color: 'red', fontSize: '0.9em' }}>{error}</p>}
-                
-                <form onSubmit={handleLogin} style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
-                     <div className="form-group">
-                        <label htmlFor="correo">Correo Institucional</label>
-                        <input
-                            id="correo" type="email" value={correo}
-                            onChange={(e) => setCorreo(e.target.value)} required
-                            style={{padding: '10px', fontSize: '1rem'}}
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="password">Contraseña (es tu Matrícula)</label>
-                        <input
-                            id="password" type="password" value={password}
-                            onChange={(e) => setPassword(e.target.value)} required
-                            style={{padding: '10px', fontSize: '1rem'}}
-                        />
-                    </div>
-                    <button type="submit" disabled={loading} className="btn-primary" style={{marginTop: '10px'}}>
-                        {loading ? 'Validando...' : 'Acceder'}
-                    </button>
-                </form>
+        <div className="alumno-portal-container">
+            <div className="portal-header">
+                <button onClick={() => navigate('/dashboard')} className="back-button">
+                    <FaArrowLeft /> Mis Materias
+                </button>
+                <h2>{materia.nombre}</h2>
+                <span className="semestre-tag">{materia.semestre}</span>
+            </div>
+
+            {/* --- Navegación por Pestañas --- */}
+            <div className="portal-tabs">
+                <button 
+                    className={`tab-button ${activeTab === 'actividades' ? 'active' : ''}`} 
+                    onClick={() => setActiveTab('actividades')}>
+                    <FaClipboardList /> Actividades
+                </button>
+                <button 
+                    className={`tab-button ${activeTab === 'evaluaciones' ? 'active' : ''}`} 
+                    onClick={() => setActiveTab('evaluaciones')}>
+                    <FaFileAlt /> Evaluaciones
+                </button>
+                <button 
+                    className={`tab-button ${activeTab === 'material' ? 'active' : ''}`} 
+                    onClick={() => setActiveTab('material')}>
+                    <FaBook /> Material de Apoyo
+                </button>
+                <button 
+                    className={`tab-button ${activeTab === 'calificaciones' ? 'active' : ''}`} 
+                    onClick={() => setActiveTab('calificaciones')}>
+                    <FaGraduationCap /> Mis Calificaciones
+                </button>
+            </div>
+
+            {/* --- Contenido de la Pestaña --- */}
+            <div className="portal-tab-content">
+                {renderTabContent()}
             </div>
         </div>
     );

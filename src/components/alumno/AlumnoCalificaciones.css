@@ -1,0 +1,110 @@
+/* src/components/alumno/AlumnoCalificaciones.css */
+.alumno-calificaciones-container {
+  font-size: 1rem;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.calificaciones-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--spacing-md, 1rem);
+}
+
+.calificaciones-table th,
+.calificaciones-table td {
+  padding: var(--spacing-md, 1rem);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border, #eee);
+}
+
+.calificaciones-table th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #333;
+}
+
+.calificaciones-table tbody tr:hover {
+  background-color: #f0f6ff;
+}
+
+.col-unidad {
+  width: 80px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--color-primary, #005A9C);
+}
+
+.col-nombre {
+  font-weight: 500;
+  color: #222;
+}
+
+.col-calificacion {
+  width: 150px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-align: right;
+}
+
+.cal-numero {
+  color: var(--color-primary, #005A9C);
+  font-size: 1.2rem;
+}
+
+/* Calificación pendiente con asterisco */
+.cal-numero.pendiente {
+  color: #b45309; /* Naranja */
+  cursor: help;
+  position: relative;
+}
+
+/* Tooltip para el asterisco */
+.cal-numero.pendiente .tooltip {
+  visibility: hidden;
+  width: 200px;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%; /* Encima del texto */
+  left: 50%;
+  margin-left: -100px; /* Centrar */
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+.cal-numero.pendiente:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.cal-texto {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  justify-content: flex-end;
+}
+.cal-entregado {
+  color: #004a80; /* Azul */
+}
+.cal-pendiente {
+  color: #777;
+}
+
+.nota-asterisco {
+  margin-top: var(--spacing-md, 1rem);
+  font-size: 0.85rem;
+  color: #777;
+  font-style: italic;
+  text-align: right;
+}

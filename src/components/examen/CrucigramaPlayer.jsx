@@ -1,54 +1,53 @@
 // src/components/examen/CrucigramaPlayer.jsx
 import React, { useState, useEffect } from 'react';
-import './CrucigramaPlayer.css'; // Crearemos este CSS
+import './CrucigramaPlayer.css';
 
 // --- Lógica de generación de cuadrícula (MUY SIMPLIFICADA) ---
 // En una implementación real, necesitarías un algoritmo que posicione las palabras
 // que se cruzan y determine el tamaño y las celdas negras.
 // Esta función es solo un placeholder para mostrar algo.
 const generarCuadriculaPlaceholder = (entradas) => {
-    // Determinar tamaño simple basado en la palabra más larga (muy básico)
     const tamano = Math.max(10, ...entradas.map(e => e.palabra.length)) + 2;
-    const grid = Array.from({ length: tamano }, () => Array(tamano).fill(null)); // null = celda negra
-
-    // Colocar palabras de forma muy simple (horizontalmente, una debajo de otra)
+    const grid = Array.from({ length: tamano }, () => Array(tamano).fill(null)); 
     let filaActual = 1;
     entradas.forEach((entrada, index) => {
         if (filaActual < tamano -1 && entrada.palabra.length < tamano - 2) {
-             grid[filaActual][0] = index + 1; // Poner número de pista
+             grid[filaActual][0] = index + 1; 
             for(let i = 0; i < entrada.palabra.length; i++) {
-                grid[filaActual][i + 1] = { letra: '', correcta: entrada.palabra[i] }; // Objeto para letra actual y correcta
+                grid[filaActual][i + 1] = { letra: '', correcta: entrada.palabra[i] }; 
             }
-            filaActual += 2; // Espacio entre palabras
+            filaActual += 2; 
         }
     });
     return grid;
 };
 
 
+// --- COMPONENTE MODIFICADO ---
+// Recibe las props del nuevo anfitrión:
 const CrucigramaPlayer = ({ pregunta, respuestaActual, onRespuestaChange }) => {
-    const { datos_extra, texto_pregunta } = pregunta;
+    // 'pregunta.datos_extra' contiene el JSON de 'entradas'
+    const { datos_extra, pregunta: texto_pregunta } = pregunta; 
     const { entradas = [] } = datos_extra || {};
 
     const [cuadricula, setCuadricula] = useState([]);
-    const [respuestasUsuario, setRespuestasUsuario] = useState(respuestaActual?.grid || {}); // { 'fila-col': 'L' }
+    // El estado local se inicializa con la respuesta guardada que viene del anfitrión
+    const [respuestasUsuario, setRespuestasUsuario] = useState(respuestaActual?.grid || {});
 
-     // Generar cuadrícula (solo una vez o si cambian las entradas)
+     // Generar cuadrícula y cargar respuestas
     useEffect(() => {
-        // En una implementación real, la generación sería compleja.
         const gridGenerada = generarCuadriculaPlaceholder(entradas);
         setCuadricula(gridGenerada);
 
-        // Cargar respuestas guardadas si existen
         if (respuestaActual?.grid) {
              setRespuestasUsuario(respuestaActual.grid);
         } else {
-             // Inicializar respuestas si no hay guardadas
+             // Inicializar si no hay nada guardado
              const initialRespuestas = {};
              gridGenerada.forEach((filaArr, fila) => {
                  filaArr.forEach((celda, col) => {
-                     if (celda && typeof celda === 'object') { // Si es una celda de letra
-                         initialRespuestas[`${fila}-${col}`] = ''; // Inicializar vacía
+                     if (celda && typeof celda === 'object') { 
+                         initialRespuestas[`${fila}-${col}`] = ''; 
                      }
                  });
              });
@@ -58,13 +57,17 @@ const CrucigramaPlayer = ({ pregunta, respuestaActual, onRespuestaChange }) => {
 
     // Manejar cambio en un input de la cuadrícula
     const handleInputChange = (fila, col, valor) => {
-        const nuevaLetra = valor.toUpperCase().slice(-1); // Última letra, mayúscula
+        const nuevaLetra = valor.toUpperCase().slice(-1); 
         const key = `${fila}-${col}`;
         const nuevasRespuestas = { ...respuestasUsuario, [key]: nuevaLetra };
-        setRespuestasUsuario(nuevasRespuestas);
-        onRespuestaChange(pregunta.id, 'crucigrama', { grid: nuevasRespuestas }); // Guardar todo el estado de la cuadrícula
+        setRespuestasUsuario(nuevasRespuestas); // Actualizar estado local
 
-         // Mover foco automáticamente a la siguiente celda horizontal (si es posible)
+        // --- LLAMAR AL ANFITRIÓN PARA GUARDAR ---
+        // El anfitrión (ExamenAlumno.jsx) se encargará del debounce y de guardarlo
+        // en la tabla 'respuestas_alumno'.
+        onRespuestaChange(pregunta.id, { grid: nuevasRespuestas });
+         
+         // Mover foco
          if (nuevaLetra && col + 1 < cuadricula[fila].length && cuadricula[fila][col + 1]) {
              const nextInput = document.getElementById(`cell-${fila}-${col + 1}`);
              nextInput?.focus();
@@ -72,25 +75,23 @@ const CrucigramaPlayer = ({ pregunta, respuestaActual, onRespuestaChange }) => {
     };
 
 
-    // Separar pistas horizontales y verticales (basado en la cuadrícula generada, aquí es simple)
+    // Separar pistas
     const pistasHorizontales = entradas.map((e, i) => ({ num: i + 1, pista: e.pista, palabra: e.palabra })); // Simplificado
-    const pistasVerticales = []; // Placeholder
+    const pistasVerticales = []; 
 
     return (
         <div className="crucigrama-player">
-            {/* <p className="instrucciones-pregunta">{texto_pregunta}</p> */}
+            <p className="instrucciones-pregunta">{texto_pregunta}</p> {/* Usar el texto de la pregunta */}
             <div className="crucigrama-area">
                 <div className="crucigrama-cuadricula" style={{ gridTemplateColumns: `repeat(${cuadricula[0]?.length || 1}, 1fr)` }}>
+                    {/* ... (El JSX de la cuadrícula no cambia) ... */}
                     {cuadricula.map((filaArr, filaIndex) =>
                         filaArr.map((celda, colIndex) => {
                             if (celda === null) {
-                                // Celda negra
                                 return <div key={`${filaIndex}-${colIndex}`} className="crucigrama-celda negra"></div>;
                             } else if (typeof celda === 'number') {
-                                // Celda con número de pista
                                 return <div key={`${filaIndex}-${colIndex}`} className="crucigrama-celda numero">{celda}</div>;
                             } else {
-                                // Celda de input para letra
                                 const key = `${filaIndex}-${colIndex}`;
                                 return (
                                     <div key={key} className="crucigrama-celda letra">
@@ -100,7 +101,6 @@ const CrucigramaPlayer = ({ pregunta, respuestaActual, onRespuestaChange }) => {
                                             maxLength="1"
                                             value={respuestasUsuario[key] || ''}
                                             onChange={(e) => handleInputChange(filaIndex, colIndex, e.target.value)}
-                                            // onKeyDown, onFocus etc. para navegación con flechas (más avanzado)
                                         />
                                     </div>
                                 );
@@ -109,6 +109,7 @@ const CrucigramaPlayer = ({ pregunta, respuestaActual, onRespuestaChange }) => {
                     )}
                 </div>
                 <div className="crucigrama-pistas">
+                    {/* ... (El JSX de las pistas no cambia) ... */}
                     <div className="pistas-columna">
                         <h4>Horizontales</h4>
                         <ol>

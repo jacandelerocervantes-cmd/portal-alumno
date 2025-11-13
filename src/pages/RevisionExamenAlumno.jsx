@@ -1,216 +1,159 @@
 // src/pages/RevisionExamenAlumno.jsx
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import './RevisionExamenAlumno.css'; // <-- Crear este CSS
+import { FaSpinner, FaArrowLeft, FaCheck, FaTimes, FaExclamationTriangle } from 'react-icons/fa';
+import './RevisionExamenAlumno.css'; // Crearemos este CSS
 
-// Componente auxiliar para mostrar una pregunta específica en modo revisión
-const PreguntaRevision = ({ pregunta, respuestaAlumno, opcionesPregunta }) => {
-    const { texto_pregunta, tipo_pregunta, puntos, datos_extra } = pregunta;
-    const { respuesta_texto, respuesta_opciones, respuesta_json, puntos_obtenidos, es_correcta, comentario_docente } = respuestaAlumno || {};
+// Importar todos los players
+import OpcionMultiplePlayer from '../components/examen/OpcionMultiplePlayer';
+import AbiertaPlayer from '../components/examen/AbiertaPlayer';
+import CrucigramaPlayer from '../components/examen/CrucigramaPlayer';
+import SopaLetrasPlayer from '../components/examen/SopaLetrasPlayer';
+import RelacionarColumnasPlayer from '../components/examen/RelacionarColumnasPlayer';
 
-    // Determinar estilo visual (correcto, incorrecto, parcial)
-    let cardClass = 'pregunta-revision-card';
-    if (es_correcta === true) cardClass += ' correcta';
-    else if (es_correcta === false) cardClass += ' incorrecta';
-    else if (puntos_obtenidos > 0) cardClass += ' parcial'; // Para abiertas o juegos con puntaje parcial
-
-    return (
-        <div className={cardClass}>
-            <div className="pregunta-header">
-                <p><strong>{texto_pregunta}</strong></p>
-                <span>{puntos_obtenidos ?? '-'}/{puntos} pts</span>
-            </div>
-            <div className="respuesta-area">
-                {tipo_pregunta === 'abierta' && (
-                    <div className="respuesta-revision">
-                        <strong>Tu Respuesta:</strong>
-                        <p className="texto-respuesta">{respuesta_texto || <i>No respondida</i>}</p>
-                    </div>
-                )}
-                {tipo_pregunta === 'opcion_multiple_unica' && (
-                    <ul className="opciones-revision">
-                        <strong>Opciones:</strong>
-                        {(opcionesPregunta || []).map(opt => {
-                             const isSelected = respuesta_opciones?.includes(opt.id);
-                             const isCorrect = opt.es_correcta;
-                             let className = '';
-                             if (isSelected && isCorrect) className = 'seleccion-correcta';
-                             else if (isSelected && !isCorrect) className = 'seleccion-incorrecta';
-                             else if (!isSelected && isCorrect) className = 'era-correcta';
-                             return (
-                                <li key={opt.id} className={className}>
-                                    {isSelected ? '●' : '○'} {opt.texto_opcion} {isCorrect ? '(Correcta)' : ''}
-                                </li>
-                             );
-                        })}
-                    </ul>
-                )}
-                 {/* --- NUEVO: Mostrar Sopa de Letras (Simplificado) --- */}
-                 {tipo_pregunta === 'sopa_letras' && datos_extra?.palabras && (
-                     <div className="respuesta-revision">
-                         <strong>Palabras a encontrar:</strong> {datos_extra.palabras.join(', ')} <br/>
-                         <strong>Encontraste:</strong> {(respuesta_json?.encontradas || []).join(', ')}
-                         {/* Podríamos mostrar la cuadrícula con las palabras marcadas, pero es más complejo */}
-                     </div>
-                 )}
-                 {/* --- NUEVO: Mostrar Crucigrama (Simplificado) --- */}
-                 {tipo_pregunta === 'crucigrama' && datos_extra?.entradas && (
-                     <div className="respuesta-revision">
-                         <strong>Pistas:</strong>
-                         <ul>
-                             {(datos_extra.entradas || []).map((e, i) => <li key={i}>{i+1}. {e.pista} <i>({e.palabra})</i></li>)}
-                         </ul>
-                         {/* Podríamos mostrar la cuadrícula completa, pero es más complejo */}
-                         <p><i>(Visualización de la cuadrícula completa pendiente)</i></p>
-                     </div>
-                 )}
-                {/* Añadir más tipos si es necesario */}
-
-                 {/* Mostrar comentario del docente si existe */}
-                 {comentario_docente && (
-                    <div className="comentario-docente">
-                        <strong>Retroalimentación:</strong>
-                        <p>{comentario_docente}</p>
-                    </div>
-                 )}
-            </div>
-        </div>
-    );
-};
-
-
-// --- Componente Principal ---
 const RevisionExamenAlumno = () => {
     const { intentoId } = useParams();
-    const [intento, setIntento] = useState(null);
-    const [evaluacion, setEvaluacion] = useState(null);
-    const [preguntas, setPreguntas] = useState([]);
-    const [respuestas, setRespuestas] = useState({}); // { preguntaId: respuestaData }
-    const [opcionesMap, setOpcionesMap] = useState({}); // { preguntaId: [opciones] }
+    const navigate = useNavigate();
+
+    // Estados
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [alumnoInfo, setAlumnoInfo] = useState(null); // Para verificar permiso
+    const [intento, setIntento] = useState(null); // Guardará la info del intento (ej. nota final)
+    const [evaluacion, setEvaluacion] = useState(null); // Guardará la info de la evaluación (ej. JSON de juegos)
+    const [revisionData, setRevisionData] = useState([]); // Array de preguntas/respuestas
 
     useEffect(() => {
-        // Verificar sesión de alumno
-        const authData = sessionStorage.getItem('alumnoAuth');
-        if (!authData) {
-            setError("Acceso denegado. Inicia sesión en el portal.");
-            setLoading(false);
-            return;
-        }
-        const parsedAuth = JSON.parse(authData);
-        setAlumnoInfo(parsedAuth);
-
-        const cargarRevision = async () => {
+        const fetchRevisionData = async () => {
+            if (!intentoId) {
+                navigate('/dashboard'); // Salir si no hay ID
+                return;
+            }
             setLoading(true);
-            setError('');
             try {
-                // 1. Cargar el intento y verificar que pertenece al alumno logueado
+                // 1. Obtener la info del intento Y la evaluación (para saber el tipo)
                 const { data: intentoData, error: intentoError } = await supabase
                     .from('intentos_evaluacion')
-                    .select(`
-                        *,
-                        evaluaciones ( *, materias (id) ),
-                        alumnos ( id, correo )
-                    `)
+                    .select('*, evaluacion:evaluaciones(*)')
                     .eq('id', intentoId)
                     .single();
-
-                if (intentoError) throw intentoError;
-                if (!intentoData) throw new Error("Intento no encontrado.");
-                // --- VERIFICACIÓN DE PERMISO ---
-                if (!intentoData.alumnos || intentoData.alumnos.correo !== parsedAuth.correo) {
-                     throw new Error("No tienes permiso para ver esta revisión.");
+                
+                if (intentoError) throw new Error("No se pudo cargar el intento. Asegúrate de tener permiso.");
+                
+                // 2. Comprobar si la revisión está activa (doble chequeo, aunque la RPC ya lo hace)
+                if (!intentoData.evaluacion.revision_activa) {
+                    throw new Error("La revisión para este examen aún no ha sido activada por tu docente.");
                 }
-                // --- FIN VERIFICACIÓN ---
-                // Verificar si se permite la revisión
-                if (intentoData.estado === 'en_progreso' || !intentoData.evaluaciones?.mostrar_respuestas) {
-                    throw new Error("La revisión para este examen no está disponible todavía o no está permitida.");
-                }
-
+                
                 setIntento(intentoData);
-                setEvaluacion(intentoData.evaluaciones);
+                setEvaluacion(intentoData.evaluacion);
 
-                // 2. Cargar todas las preguntas de esa evaluación (con sus opciones)
-                const evaluacionId = intentoData.evaluacion_id;
-                const { data: preguntasData, error: preguntasError } = await supabase
-                    .from('preguntas')
-                    .select('*, opciones(*)') // Cargar opciones anidadas
-                    .eq('evaluacion_id', evaluacionId)
-                    .order('orden', { ascending: true }); // Ordenar preguntas
+                // 3. Llamar a la RPC segura para obtener los datos de revisión
+                const { data: rpcData, error: rpcError } = await supabase
+                    .rpc('get_examen_revision_data', { p_intento_id: intentoId });
 
-                if (preguntasError) throw preguntasError;
-                setPreguntas(preguntasData || []);
+                if (rpcError) throw new Error("Error al obtener los datos de revisión.");
 
-                 // Crear mapa de opciones para pasarlo a PreguntaRevision
-                 const optsMap = {};
-                 (preguntasData || []).forEach(p => {
-                     if (p.opciones) {
-                         optsMap[p.id] = p.opciones.sort((a,b)=> a.orden - b.orden); // Ordenar opciones si tienen 'orden'
-                     }
-                 });
-                 setOpcionesMap(optsMap);
+                // 4. Manejar los datos
+                const esTipoJuego = ['crucigrama', 'sopa_letras', 'relacionar_columnas'].includes(intentoData.evaluacion.tipo_evaluacion);
 
-
-                // 3. Cargar las respuestas del alumno para este intento
-                const { data: respData, error: respError } = await supabase
-                    .from('respuestas_alumno')
-                    .select('*')
-                    .eq('intento_id', intentoId);
-
-                if (respError) throw respError;
-
-                // Organizar respuestas por preguntaId
-                const respMap = {};
-                (respData || []).forEach(r => {
-                    respMap[r.pregunta_id] = r;
-                });
-                setRespuestas(respMap);
+                if (esTipoJuego) {
+                    // Si es un juego, la RPC no devuelve mucho. Usamos el JSON de la evaluación
+                    // y la respuesta guardada (que también está en la RPC)
+                    const respuestaJuego = rpcData.find(r => r.pregunta_id === null || r.pregunta_id === intentoData.evaluacion.id);
+                    setRevisionData([{
+                        pregunta_id: intentoData.evaluacion.id,
+                        pregunta_texto: intentoData.evaluacion.titulo,
+                        tipo_pregunta: intentoData.evaluacion.tipo_evaluacion,
+                        datos_extra: intentoData.evaluacion.preguntas_json,
+                        puntos: 100, // Asumimos 100
+                        respuesta_alumno: respuestaJuego?.respuesta_alumno || {},
+                        respuesta_correcta: { ...intentoData.evaluacion.preguntas_json }, // Las "entradas" son la respuesta
+                        puntos_obtenidos: intentoData.calificacion_final
+                    }]);
+                } else {
+                    // Si es estándar, usamos los datos de la RPC
+                    setRevisionData(rpcData);
+                }
 
             } catch (err) {
-                console.error("Error cargando revisión:", err);
-                setError(err.message || "No se pudo cargar la revisión.");
+                console.error("Error cargando revisión:", err.message);
+                setError(err.message);
             } finally {
                 setLoading(false);
             }
         };
 
-        cargarRevision();
+        fetchRevisionData();
+    }, [intentoId, navigate]);
 
-    }, [intentoId]); // Dependencia principal
+    // Renderiza el Player adecuado en "modo revisión"
+    const renderRevisionPlayer = (pregunta) => {
+        const props = {
+            pregunta: pregunta,
+            respuestaActual: pregunta.respuesta_alumno, // Lo que el alumno respondió
+            respuestaCorrecta: pregunta.respuesta_correcta, // La respuesta correcta
+            puntosObtenidos: pregunta.puntos_obtenidos,
+            mode: 'revision' // ¡La prop clave!
+        };
 
+        switch (pregunta.tipo_pregunta) {
+            case 'opcion_multiple':
+                return <OpcionMultiplePlayer {...props} />;
+            case 'abierta':
+                return <AbiertaPlayer {...props} />;
+            case 'crucigrama':
+                return <CrucigramaPlayer {...props} />;
+            case 'sopa_letras':
+                return <SopaLetrasPlayer {...props} />;
+            case 'relacionar_columnas':
+                return <RelacionarColumnasPlayer {...props} />;
+            default:
+                return <p>Tipo de pregunta no soportado: {pregunta.tipo_pregunta}</p>;
+        }
+    };
 
-    // --- Renderizado ---
-    if (loading) return <div className="container">Cargando revisión...</div>;
-    if (error) return <div className="container error-message">{error} <Link to="/alumno/evaluaciones">Volver</Link></div>;
-    if (!intento || !evaluacion) return <div className="container">No se encontraron datos.</div>;
+    if (loading) {
+        return <div className="examen-loading"><FaSpinner className="spinner" /> Cargando Revisión...</div>;
+    }
 
+    if (error) {
+        return (
+            <div className="examen-error">
+                <FaExclamationTriangle />
+                <p>{error}</p>
+                <button className="btn-secondary" onClick={() => navigate(-1)}>Volver</button>
+            </div>
+        );
+    }
 
     return (
-        <div className="revision-examen-container container">
-            <Link to="/alumno/evaluaciones" className="back-link">&larr; Volver a Mis Evaluaciones</Link>
-            <h2>Revisión: {evaluacion.titulo}</h2>
-            <div className="resumen-intento card">
-                <h3>Resumen de tu Intento</h3>
-                <p>Calificación Final: <strong>{intento.calificacion_final ?? 'N/A'} / 100</strong></p>
-                <p>Estado: {intento.estado}</p>
-                <p>Iniciado: {new Date(intento.fecha_inicio).toLocaleString('es-MX')}</p>
-                <p>Finalizado: {intento.fecha_fin ? new Date(intento.fecha_fin).toLocaleString('es-MX') : '-'}</p>
-            </div>
+        <div className="revision-examen-container">
+            <header className="revision-header">
+                <button onClick={() => navigate(`/materia/${evaluacion?.materia_id}?tab=evaluaciones`)} className="back-button">
+                    <FaArrowLeft /> Volver a Evaluaciones
+                </button>
+                <h2>Revisión: {evaluacion?.titulo}</h2>
+                <div className="calificacion-final-badge">
+                    Calificación Final:
+                    <strong>{intento?.calificacion_final.toFixed(0)} / 100</strong>
+                </div>
+            </header>
 
-            <h3>Detalle de Preguntas:</h3>
-            <div className="preguntas-revision-list">
-                {preguntas.map((pregunta, index) => (
-                    <PreguntaRevision
-                        key={pregunta.id}
-                        pregunta={pregunta}
-                        respuestaAlumno={respuestas[pregunta.id]} // Pasar la respuesta específica
-                        opcionesPregunta={opcionesMap[pregunta.id]} // Pasar opciones para esa pregunta
-                    />
+            <main className="revision-preguntas-list">
+                {revisionData.map((pregunta, index) => (
+                    <div key={pregunta.pregunta_id || index} className="revision-pregunta-wrapper card">
+                        <div className="pregunta-header">
+                            <h4>Pregunta {index + 1}</h4>
+                            <div className={`pregunta-resultado ${pregunta.puntos_obtenidos > 0 ? 'correcta' : 'incorrecta'}`}>
+                                {pregunta.puntos_obtenidos > 0 ? <FaCheck /> : <FaTimes />}
+                                {pregunta.puntos_obtenidos} / {pregunta.puntos} pts
+                            </div>
+                        </div>
+                        {renderRevisionPlayer(pregunta)}
+                    </div>
                 ))}
-            </div>
+            </main>
         </div>
     );
 };

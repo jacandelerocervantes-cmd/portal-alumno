@@ -1,0 +1,77 @@
+/* src/components/alumno/AlumnoReporte.css */
+.alumno-reporte-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg, 1.5rem);
+}
+
+/* --- KPIs (Copiados de ReportesPanel del admin) --- */
+.report-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--spacing-lg, 1.5rem);
+}
+
+.report-kpi-card {
+  padding: var(--spacing-md, 1rem);
+  text-align: center;
+  border-radius: 8px;
+  background-color: #f9fafb;
+  border: 1px solid var(--color-border, #eee);
+}
+.report-kpi-card h4 {
+  color: #333;
+  font-size: 1rem;
+  margin-bottom: var(--spacing-sm, 0.5rem);
+}
+.kpi-value {
+  font-size: 2.2rem;
+  font-weight: bold;
+  color: var(--color-primary, #005A9C);
+}
+.kpi-unit {
+  font-size: 1.2rem;
+  margin-left: 4px;
+  color: #777;
+}
+.report-kpi-card.risk {
+  background-color: #ffeeeb;
+  border-color: #f56565;
+}
+.report-kpi-card.risk .kpi-value,
+.report-kpi-card.risk h4 {
+  color: #a51800;
+}
+.report-kpi-card.risk .kpi-unit {
+  color: #a51800;
+}
+
+/* --- Gráficas --- */
+.report-charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg, 1.5rem);
+}
+
+.report-chart-container {
+  padding: var(--spacing-md, 1rem);
+}
+.report-chart-container h5 {
+  text-align: center;
+  color: var(--color-secondary, #00BFFF);
+  margin-bottom: var(--spacing-md, 1rem);
+}
+.report-chart-container .no-data {
+  text-align: center;
+  color: #888;
+  font-style: italic;
+  padding: 3rem 1rem;
+}
+
+/* Adaptación a móviles */
+@media (max-width: 768px) {
+    .report-charts-grid {
+        grid-template-columns: 1fr; /* Una gráfica encima de la otra */
+    }
+}

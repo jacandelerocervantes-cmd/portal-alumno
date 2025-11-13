@@ -25,7 +25,12 @@ const generarCuadriculaPlaceholder = (entradas) => {
 
 // --- COMPONENTE MODIFICADO ---
 // Recibe las props del nuevo anfitrión:
-const CrucigramaPlayer = ({ pregunta, respuestaActual, onRespuestaChange }) => {
+const CrucigramaPlayer = ({ 
+    pregunta, 
+    respuestaActual, 
+    onRespuestaChange,
+    mode = 'examen'
+}) => {
     // 'pregunta.datos_extra' contiene el JSON de 'entradas'
     const { datos_extra, pregunta: texto_pregunta } = pregunta; 
     const { entradas = [] } = datos_extra || {};
@@ -57,6 +62,9 @@ const CrucigramaPlayer = ({ pregunta, respuestaActual, onRespuestaChange }) => {
 
     // Manejar cambio en un input de la cuadrícula
     const handleInputChange = (fila, col, valor) => {
+        // --- 1. Deshabilitar en modo revisión ---
+        if (mode === 'revision') return;
+
         const nuevaLetra = valor.toUpperCase().slice(-1); 
         const key = `${fila}-${col}`;
         const nuevasRespuestas = { ...respuestasUsuario, [key]: nuevaLetra };
@@ -74,6 +82,20 @@ const CrucigramaPlayer = ({ pregunta, respuestaActual, onRespuestaChange }) => {
          }
     };
 
+    
+    // --- 2. Helper para clases de revisión ---
+    const getClaseCelda = (celda, fila, col) => {
+        if (mode !== 'revision' || typeof celda !== 'object') return '';
+        
+        const letraUsuario = respuestasUsuario[`${fila}-${col}`] || '';
+        const letraCorrecta = celda.correcta;
+
+        if (letraUsuario.toUpperCase() === letraCorrecta.toUpperCase()) {
+            return 'correcta';
+        } else {
+            return 'incorrecta';
+        }
+    };
 
     // Separar pistas
     const pistasHorizontales = entradas.map((e, i) => ({ num: i + 1, pista: e.pista, palabra: e.palabra })); // Simplificado
@@ -94,13 +116,14 @@ const CrucigramaPlayer = ({ pregunta, respuestaActual, onRespuestaChange }) => {
                             } else {
                                 const key = `${filaIndex}-${colIndex}`;
                                 return (
-                                    <div key={key} className="crucigrama-celda letra">
+                                    <div key={key} className={`crucigrama-celda letra ${getClaseCelda(celda, filaIndex, colIndex)}`}>
                                         <input
                                             id={`cell-${key}`}
                                             type="text"
                                             maxLength="1"
                                             value={respuestasUsuario[key] || ''}
                                             onChange={(e) => handleInputChange(filaIndex, colIndex, e.target.value)}
+                                            disabled={mode === 'revision'} // <-- 3. Deshabilitar
                                         />
                                     </div>
                                 );

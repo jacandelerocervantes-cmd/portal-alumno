@@ -1,0 +1,32 @@
+/* src/components/alumno/SubirActividadModal.css */
+.fecha-limite {
+    font-weight: 600;
+    color: var(--color-secondary, #00BFFF);
+    margin-top: -0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+#file-upload {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px dashed #ddd;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    cursor: pointer;
+}
+#file-upload:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.file-info {
+    font-weight: 500;
+    color: #333;
+    background-color: #eee;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}

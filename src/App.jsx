@@ -2,26 +2,18 @@ import { useState, useEffect } from 'react'
 import { Routes, Route, useNavigate, Navigate, Outlet } from 'react-router-dom'
 import { supabase } from './supabaseClient'
 import AuthAlumno from './pages/AuthAlumno'
-import AlumnoPortal from './pages/AlumnoPortal';
-import AlumnoDashboard from './pages/AlumnoDashboard';
-import ExamenAlumno from './pages/ExamenAlumno';
+import AlumnoPortal from './pages/AlumnoPortal'
+import AlumnoDashboard from './pages/AlumnoDashboard'
+import ExamenAlumno from './pages/ExamenAlumno'
+import RevisionExamenAlumno from './pages/RevisionExamenAlumno';
 import Layout from './components/Layout'
 import './App.css'
 
-// Componente "guardián" para rutas privadas
-const RutaProtegida = ({ session }) => {
-  if (!session) {
-    return <Navigate to="/login" replace />;
-  }
-  // Si hay sesión, renderiza el Layout que contiene el Outlet
-  return (
-    <Layout session={session}>
-      <Outlet />
-    </Layout>
-  );
-};
+// Importar el contenedor de notificaciones
+import NotificationContainer from './components/NotificationContainer'
 
-function App() {
+// El componente de App ahora asume que está DENTRO de NotificationProvider
+function AppContent() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -67,12 +59,35 @@ function App() {
         <Route path="/dashboard" element={<AlumnoDashboard />} />
         <Route path="/materia/:id" element={<AlumnoPortal />} />
         <Route path="/examen/:id" element={<ExamenAlumno />} />
-        {/* <Route path="/examen/:id/revision" element={<RevisionExamenAlumno />} /> */}
+        <Route path="/examen/revision/:intentoId" element={<RevisionExamenAlumno />} />
       </Route>
 
       {/* Redirección por defecto */}
       <Route path="*" element={<Navigate to={session ? "/dashboard" : "/login"} replace />} />
     </Routes>
+  );
+}
+
+// Componente "guardián" para rutas privadas
+const RutaProtegida = ({ session }) => {
+  if (!session) {
+    return <Navigate to="/login" replace />;
+  }
+  // Si hay sesión, renderiza el Layout que contiene el Outlet
+  return (
+    <Layout session={session}>
+      <Outlet />
+    </Layout>
+  );
+};
+
+// Componente principal de App (ahora solo envuelve)
+function App() {
+  return (
+    <>
+      <NotificationContainer />
+      <AppContent />
+    </>
   )
 }
 

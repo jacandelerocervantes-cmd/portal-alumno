@@ -1,6 +1,6 @@
 // src/components/alumno/AlumnoActividadCard.jsx
 import React from 'react';
-import { FaCheckCircle, FaExclamationCircle, FaTimesCircle, FaClock, FaFileUpload } from 'react-icons/fa';
+import { FaCheckCircle, FaExclamationCircle, FaTimesCircle, FaClock, FaFileUpload, FaFileDownload } from 'react-icons/fa';
 import './AlumnoActividadCard.css'; // Crearemos este CSS
 
 // Helper para formatear la fecha
@@ -18,8 +18,10 @@ const formatDate = (dateString) => {
     }
 };
 
-const AlumnoActividadCard = ({ actividad, calificacion }) => {
-    const { nombre, descripcion, unidad, tipo_entrega, fecha_limite } = actividad;
+// --- 1. Añadir 'onEntregarClick' como prop ---
+const AlumnoActividadCard = ({ actividad, calificacion, onEntregarClick }) => {
+    // --- 1. Obtener 'esta_activo' de la actividad ---
+    const { nombre, descripcion, unidad, tipo_entrega, fecha_limite, esta_activo } = actividad;
 
     // Determinar el estado de la entrega
     const getStatus = () => {
@@ -57,14 +59,26 @@ const AlumnoActividadCard = ({ actividad, calificacion }) => {
 
     const status = getStatus();
 
+    // Comprobar si la fecha límite ya pasó
+    const vencido = new Date(fecha_limite) < new Date();
+
+    // --- 2. Lógica de deshabilitado ---
+    // El botón se deshabilita si está vencido O SI NO ESTÁ ACTIVO
+    const estaDeshabilitado = vencido || !esta_activo;
+
     return (
-        <div className="alumno-actividad-card card">
+        <div className={`alumno-actividad-card card ${!esta_activo ? 'desactivado' : ''}`}>
             <div className="card-header">
                 <span className="unidad-tag">Unidad {unidad}</span>
-                <div className={`status-badge ${status.clase}`}>
-                    {status.icon}
-                    {status.text}
-                </div>
+                {/* 3. Mostrar un badge si no está activo */}
+                {!esta_activo ? (
+                    <div className="status-badge status-pendiente">No Activo</div>
+                ) : (
+                    <div className={`status-badge ${status.clase}`}>
+                        {status.icon}
+                        {status.text}
+                    </div>
+                )}
             </div>
             
             <div className="card-body">
@@ -83,16 +97,46 @@ const AlumnoActividadCard = ({ actividad, calificacion }) => {
                 </div>
             </div>
 
+            {/* --- 2. Lógica de Acciones Modificada --- */}
             <div className="card-actions">
-                {/* Mostramos la calificación si existe */}
-                {calificacion?.estado === 'calificado' ? (
-                    <div className="calificacion-badge">
-                        Calificación: <strong>{calificacion.calificacion_obtenida} / 100</strong>
-                    </div>
-                ) : (
-                    // Botón para subir (la lógica de subida la añadiremos después)
-                    <button className="btn-primary icon-button" disabled={status.clase === 'status-vencido'}>
-                        <FaFileUpload /> {calificacion?.estado === 'entregado' ? 'Reemplazar Entrega' : 'Subir Archivo'}
+                {/* Si ya está calificado, mostrar nota y enlace de descarga */}
+                {calificacion?.estado === 'calificado' && (
+                    <>
+                        <a href={calificacion.drive_url_entrega} target="_blank" rel="noopener noreferrer" className="btn-secondary icon-button btn-small">
+                            <FaFileDownload /> Ver mi entrega
+                        </a>
+                        <div className="calificacion-badge">
+                            Calificación: <strong>{calificacion.calificacion_obtenida} / 100</strong>
+                        </div>
+                    </>
+                )}
+
+                {/* Si solo está entregado (no calificado) */}
+                {calificacion?.estado === 'entregado' && (
+                    <>
+                        <a href={calificacion.drive_url_entrega} target="_blank" rel="noopener noreferrer" className="btn-secondary icon-button btn-small">
+                            <FaFileDownload /> Ver mi entrega
+                        </a>
+                        <button 
+                            className="btn-primary icon-button" 
+                            onClick={() => onEntregarClick(actividad)} 
+                            disabled={estaDeshabilitado}
+                            title={!esta_activo ? "Esta actividad aún no ha sido activada por el docente." : (vencido ? "La fecha límite ha pasado." : "Reemplazar entrega")}
+                        >
+                            <FaFileUpload /> Reemplazar Entrega
+                        </button>
+                    </>
+                )}
+
+                {/* Si está pendiente */}
+                {!calificacion && (
+                    <button 
+                        className="btn-primary icon-button" 
+                        onClick={() => onEntregarClick(actividad)} 
+                        disabled={estaDeshabilitado}
+                        title={!esta_activo ? "Esta actividad aún no ha sido activada por el docente." : (vencido ? "La fecha límite ha pasado." : "Subir entrega")}
+                    >
+                        <FaFileUpload /> Subir Archivo
                     </button>
                 )}
             </div>

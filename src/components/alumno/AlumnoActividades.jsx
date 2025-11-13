@@ -1,7 +1,8 @@
 // src/components/alumno/AlumnoActividades.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../supabaseClient';
 import AlumnoActividadCard from './AlumnoActividadCard';
+import SubirActividadModal from './SubirActividadModal'; // <-- 1. Importar el modal
 import { FaSpinner } from 'react-icons/fa';
 
 const AlumnoActividades = ({ materiaId }) => {
@@ -10,9 +11,15 @@ const AlumnoActividades = ({ materiaId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [alumnoId, setAlumnoId] = useState(null);
+  
+  // --- 2. Estado para el modal ---
+  const [actividadParaEntregar, setActividadParaEntregar] = useState(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
+  // --- 3. Función de recarga (ahora en useCallback) ---
+  const fetchData = useCallback(async () => {
+    // No es necesario poner setLoading(true) aquí si solo se llama desde useEffect
+    // Pero si se llama desde otros sitios (como onEntregaCompleta), es bueno tenerlo.
+    // Para este caso, lo dejamos para asegurar que se muestre el spinner al recargar.
       setLoading(true);
       setError('');
       try {
@@ -34,7 +41,7 @@ const AlumnoActividades = ({ materiaId }) => {
         // RLS: "Alumnos pueden ver actividades de sus materias"
         const { data: actividadesData, error: actividadesError } = await supabase
           .from('actividades')
-          .select('*')
+          .select('*, esta_activo') // <-- ¡CAMBIO AQUÍ!
           .eq('materia_id', materiaId)
           .order('unidad', { ascending: true })
           .order('fecha_limite', { ascending: true });
@@ -46,7 +53,7 @@ const AlumnoActividades = ({ materiaId }) => {
         // RLS: "Alumnos pueden ver sus propias calificaciones"
         const { data: calificacionesData, error: calificacionesError } = await supabase
           .from('calificaciones')
-          .select('actividad_id, calificacion_obtenida, estado')
+          .select('actividad_id, calificacion_obtenida, estado, drive_url_entrega') // Traer URL
           .eq('alumno_id', alumnoData.id)
           .eq('materia_id', materiaId)
           .not('actividad_id', 'is', null); // Solo las que son de actividades
@@ -68,10 +75,27 @@ const AlumnoActividades = ({ materiaId }) => {
       } finally {
         setLoading(false);
       }
-    };
+  }, [materiaId]); // Depende de materiaId
 
+  useEffect(() => {
     fetchData();
-  }, [materiaId]);
+  }, [fetchData]); // Llamar a fetchData al montar
+
+  // --- 4. Handlers del Modal ---
+  const handleOpenModal = (actividad) => {
+    setActividadParaEntregar(actividad);
+  };
+
+  const handleCloseModal = () => {
+    setActividadParaEntregar(null);
+  };
+
+  const handleEntregaCompleta = () => {
+    // Cerramos el modal inmediatamente para feedback visual
+    setActividadParaEntregar(null); 
+    // Recargamos los datos para ver el cambio de estado
+    fetchData(); 
+  };
 
   if (loading) {
     return (
@@ -97,9 +121,19 @@ const AlumnoActividades = ({ materiaId }) => {
               key={act.id} 
               actividad={act}
               calificacion={calificaciones.get(act.id)} // Pasamos la calificación (o undefined)
+              onEntregarClick={handleOpenModal} // <-- 5. Pasar el handler
             />
           ))}
         </div>
+      )}
+
+      {/* --- 6. Renderizar el Modal --- */}
+      {actividadParaEntregar && (
+        <SubirActividadModal
+          actividad={actividadParaEntregar}
+          onClose={handleCloseModal}
+          onEntregaCompleta={handleEntregaCompleta}
+        />
       )}
     </div>
   );

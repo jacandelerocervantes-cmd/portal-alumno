@@ -30,7 +30,12 @@ const generarCuadriculaSopa = (palabras, tamano = 12) => {
 
 
 // --- COMPONENTE MODIFICADO ---
-const SopaLetrasPlayer = ({ pregunta, respuestaActual, onRespuestaChange }) => {
+const SopaLetrasPlayer = ({ 
+    pregunta, 
+    respuestaActual, 
+    onRespuestaChange,
+    mode = 'examen' 
+}) => {
     // 'pregunta.datos_extra' contiene { palabras: [], cuadricula: [...] }
     const { datos_extra, pregunta: texto_pregunta } = pregunta;
     const { palabras = [], cuadricula: cuadriculaGenerada = [] } = datos_extra || {};
@@ -61,6 +66,9 @@ const SopaLetrasPlayer = ({ pregunta, respuestaActual, onRespuestaChange }) => {
 
     // Lógica para manejar el clic en una celda
     const handleCeldaClick = (fila, col) => {
+        // --- 1. Deshabilitar en modo revisión ---
+        if (mode === 'revision') return;
+        
         const key = `${fila}-${col}`;
         const indexEnSeleccion = seleccion.indexOf(key);
 
@@ -128,14 +136,22 @@ const SopaLetrasPlayer = ({ pregunta, respuestaActual, onRespuestaChange }) => {
                 <div className="sopa-palabras-lista">
                     <h4>Palabras a encontrar:</h4>
                     <ul>
-                        {palabras.map((palabra, index) => (
-                            <li 
-                                key={index} 
-                                className={palabrasEncontradas.includes(palabra) ? 'encontrada' : ''}
-                            >
-                                {palabra}
-                            </li>
-                        ))}
+                        {palabras.map((palabra, index) => {
+                            // --- 2. Lógica de Revisión ---
+                            const encontrada = palabrasEncontradas.includes(palabra);
+                            let clase = '';
+                            if (mode === 'revision') {
+                                clase = encontrada ? 'encontrada' : 'no-encontrada';
+                            } else {
+                                clase = encontrada ? 'encontrada' : '';
+                            }
+
+                            return (
+                                <li key={index} className={clase}>
+                                    {palabra}
+                                </li>
+                            );
+                        })}
                     </ul>
                 </div>
 
@@ -147,6 +163,7 @@ const SopaLetrasPlayer = ({ pregunta, respuestaActual, onRespuestaChange }) => {
                                 key={`${filaIndex}-${colIndex}`}
                                 className={`sopa-letras-celda ${getCeldaClase(filaIndex, colIndex)}`}
                                 onClick={() => handleCeldaClick(filaIndex, colIndex)}
+                                style={{ cursor: mode === 'revision' ? 'default' : 'pointer' }} // <-- 3. Cambiar cursor
                             >
                                 {letra}
                             </div>

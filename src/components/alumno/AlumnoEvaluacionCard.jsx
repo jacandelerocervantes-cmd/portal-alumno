@@ -1,85 +1,39 @@
-// src/components/alumno/AlumnoEvaluacionCard.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPlayCircle, FaCheckCircle, FaRedo, FaFileAlt } from 'react-icons/fa';
-import './AlumnoEvaluacionCard.css'; // Crearemos este CSS
-
-// Helper para formatear el tipo de examen
-const formatTipo = (tipo) => {
-    switch (tipo) {
-        case 'opcion_multiple': return 'Opción Múltiple';
-        case 'abierta': return 'Preguntas Abiertas';
-        case 'crucigrama': return 'Crucigrama';
-        case 'sopa_letras': return 'Sopa de Letras';
-        case 'relacionar_columnas': return 'Relacionar Columnas';
-        default: return tipo;
-    }
-};
+import { FaFileAlt, FaEdit, FaCheckCircle, FaRedo } from 'react-icons/fa';
+import './AlumnoEvaluacionCard.css';
 
 const AlumnoEvaluacionCard = ({ evaluacion, intento }) => {
     const navigate = useNavigate();
-    const { id, titulo, unidad, tipo_evaluacion, intentos_permitidos } = evaluacion;
+    // --- 1. Obtener 'esta_activo' ---
+    const { id, titulo, unidad, tipo_evaluacion, intentos_permitidos, esta_activo } = evaluacion;
 
-    // Determinar el estado del examen y el botón
+    const formatTipo = (tipo) => {
+        return tipo.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    };
+
     const getStatusAndAction = () => {
-        if (!intento) {
-            // El alumno nunca ha intentado este examen
-            return {
-                statusText: 'Pendiente',
-                statusClass: 'status-pendiente',
-                actionText: 'Iniciar Examen',
-                actionIcon: <FaPlayCircle />,
-                actionClass: 'btn-primary',
-                disabled: false,
-                calificacion: null
-            };
+        if (intento) {
+            if (intento.estado === 'finalizado') {
+                return {
+                    statusText: 'Completado',
+                    statusClass: 'status-completado',
+                    actionText: 'Ver Revisión',
+                    actionIcon: <FaCheckCircle />,
+                    actionClass: 'btn-secondary',
+                    disabled: false, // Se puede ver la revisión
+                    calificacion: intento.calificacion_final
+                };
+            }
+            // Podría haber otros estados como 'en_progreso'
         }
 
-        if (intento.estado === 'calificado') {
-            // El examen está terminado y calificado
-            return {
-                statusText: 'Calificado',
-                statusClass: 'status-calificado',
-                actionText: 'Revisar Examen',
-                actionIcon: <FaCheckCircle />,
-                actionClass: 'btn-success',
-                disabled: false, // Habilitado para revisar
-                calificacion: intento.calificacion_final
-            };
-        }
-
-        if (intento.estado === 'en_progreso') {
-            // El alumno dejó un examen a medias
-            return {
-                statusText: 'En Progreso',
-                statusClass: 'status-entregado', // Reutilizamos clase
-                actionText: 'Continuar Examen',
-                actionIcon: <FaPlayCircle />,
-                actionClass: 'btn-warning', // Botón naranja
-                disabled: false,
-                calificacion: null
-            };
-        }
-
-        if (intento.estado === 'entregado') {
-             // Entregado pero aún no calificado (ej. preguntas abiertas)
-             return {
-                statusText: 'Pendiente de Calificar',
-                statusClass: 'status-entregado',
-                actionText: 'Entregado',
-                actionIcon: <FaCheckCircle />,
-                actionClass: 'btn-secondary',
-                disabled: true,
-                calificacion: null
-            };
-        }
-
-        // Caso por defecto (debería ser 'pendiente', pero es un fallback)
+        // Si no hay intento o no está finalizado
         return {
             statusText: 'Pendiente',
             statusClass: 'status-pendiente',
-            actionText: 'Iniciar Examen',
-            actionIcon: <FaPlayCircle />,
+            actionText: 'Iniciar Evaluación',
+            actionIcon: <FaEdit />,
             actionClass: 'btn-primary',
             disabled: false,
             calificacion: null
@@ -88,19 +42,22 @@ const AlumnoEvaluacionCard = ({ evaluacion, intento }) => {
 
     const { statusText, statusClass, actionText, actionIcon, actionClass, disabled, calificacion } = getStatusAndAction();
 
+    // --- 2. Lógica de deshabilitado ---
+    // El botón se deshabilita si ya lo entregó (disabled) O SI NO ESTÁ ACTIVO
+    const estaDeshabilitado = disabled || !esta_activo;
+
     const handleActionClick = () => {
-        if (statusText === 'Calificado') {
-            // Navegar a la página de revisión
-            // navigate(`/examen/${id}/revision/${intento.id}`); // (Ruta pendiente de crear)
-            alert("Navegando a revisión... (Página pendiente)");
+        if (estaDeshabilitado) return;
+
+        if (intento?.estado === 'finalizado') {
+            navigate(`/examen/${id}/revision`);
         } else {
-            // Navegar a la página de presentar el examen
             navigate(`/examen/${id}`);
         }
     };
 
     return (
-        <div className="alumno-evaluacion-card card">
+        <div className={`alumno-evaluacion-card card ${!esta_activo ? 'desactivado' : ''}`}>
             <div className="eval-card-icon">
                 <FaFileAlt />
             </div>
@@ -108,20 +65,26 @@ const AlumnoEvaluacionCard = ({ evaluacion, intento }) => {
                 <span className="unidad-tag">Unidad {unidad}</span>
                 <h3>{titulo}</h3>
                 <p>Tipo: <strong>{formatTipo(tipo_evaluacion)}</strong></p>
-                <div className={`status-badge ${statusClass}`}>
-                    {statusText}
-                </div>
+                {/* 3. Mostrar "No Activo" */}
+                {!esta_activo ? (
+                    <div className="status-badge status-pendiente">No Activo</div>
+                ) : (
+                    <div className={`status-badge ${statusClass}`}>
+                        {statusText}
+                    </div>
+                )}
             </div>
             <div className="eval-card-action">
                 {calificacion !== null && (
                     <div className="calificacion-badge">
-                        Calificación: <strong>{calificacion.toFixed(0)} / 100</strong>
+                        Calificación: <strong>{calificacion} / 100</strong>
                     </div>
                 )}
                 <button 
                     className={`btn ${actionClass} icon-button`}
                     onClick={handleActionClick}
-                    disabled={disabled}
+                    disabled={estaDeshabilitado} // <-- ¡CAMBIO AQUÍ!
+                    title={!esta_activo ? "Esta evaluación no está activa." : actionText}
                 >
                     {actionIcon}
                     {actionText}

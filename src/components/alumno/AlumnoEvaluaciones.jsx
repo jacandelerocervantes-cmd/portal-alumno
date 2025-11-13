@@ -34,7 +34,7 @@ const AlumnoEvaluaciones = ({ materiaId }) => {
         // RLS: "Alumnos pueden ver evaluaciones de sus materias"
         const { data: evaluacionesData, error: evaluacionesError } = await supabase
           .from('evaluaciones')
-          .select('*')
+          .select('*, esta_activo, revision_activa')
           .eq('materia_id', materiaId)
           .order('unidad', { ascending: true });
 

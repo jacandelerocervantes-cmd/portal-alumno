@@ -2,21 +2,22 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { FaSpinner, FaArrowLeft, FaBook, FaClipboardList, FaFileAlt, FaGraduationCap } from 'react-icons/fa';
+// --- 1. Importar FaChartPie para el reporte y eliminar FaGraduationCap ---
+import { FaSpinner, FaArrowLeft, FaBook, FaClipboardList, FaFileAlt, FaChartPie } from 'react-icons/fa'; // FaGraduationCap no se usa
 import './AlumnoPortal.css'; 
 
 // --- 1. Importar los componentes de las pestañas ---
 import AlumnoActividades from '../components/alumno/AlumnoActividades'; // <-- AÑADIR ESTE
 import AlumnoEvaluaciones from '../components/alumno/AlumnoEvaluaciones'; // <-- AÑADIR ESTE
 import AlumnoMaterial from '../components/alumno/AlumnoMaterial'; // <-- AÑADIR ESTE
-import AlumnoCalificaciones from '../components/alumno/AlumnoCalificaciones'; // <-- AÑADIR ESTE
+import AlumnoReporte from '../components/alumno/AlumnoReporte'; // <-- 2. Importar el nuevo componente en lugar de AlumnoCalificaciones
 
 const AlumnoPortal = () => {
     // ... (estados: materia, loading, error, activeTab... sin cambios)
     const { id: materiaId } = useParams();
     const navigate = useNavigate();
     const [materia, setMateria] = useState(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true); // Iniciar en true para mostrar spinner
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState('actividades'); 
 
@@ -60,8 +61,8 @@ const AlumnoPortal = () => {
                 return <AlumnoEvaluaciones materiaId={materia.id} />; // <-- CONECTADO
             case 'material':
                 return <AlumnoMaterial materia={materia} />; // <-- CONECTADO
-            case 'calificaciones':
-                return <AlumnoCalificaciones materiaId={materia.id} />; // <-- CONECTADO
+            case 'reporte': // <-- 3. Cambiar 'calificaciones' por 'reporte' y renderizar el nuevo componente
+                return <AlumnoReporte materiaId={materia.id} />;
             default:
                 return null;
         }
@@ -95,7 +96,7 @@ const AlumnoPortal = () => {
                 <span className="semestre-tag">{materia.semestre}</span>
             </div>
 
-            {/* --- Navegación por Pestañas --- */}
+            {/* --- 5. Pestañas Modificadas --- */}
             <div className="portal-tabs">
                 <button 
                     className={`tab-button ${activeTab === 'actividades' ? 'active' : ''}`} 
@@ -110,12 +111,13 @@ const AlumnoPortal = () => {
                 <button 
                     className={`tab-button ${activeTab === 'material' ? 'active' : ''}`} 
                     onClick={() => setActiveTab('material')}>
-                    <FaBook /> Material de Apoyo
+                    <FaBook /> Material
                 </button>
+                {/* --- CAMBIO DE NOMBRE E ICONO --- */}
                 <button 
-                    className={`tab-button ${activeTab === 'calificaciones' ? 'active' : ''}`} 
-                    onClick={() => setActiveTab('calificaciones')}>
-                    <FaGraduationCap /> Mis Calificaciones
+                    className={`tab-button ${activeTab === 'reporte' ? 'active' : ''}`} 
+                    onClick={() => setActiveTab('reporte')}>
+                    <FaChartPie /> Reporte
                 </button>
             </div>
 

@@ -1,10 +1,18 @@
 // src/components/examen/RelacionarColumnasPlayer.jsx
 import React, { useState, useEffect } from 'react';
-import { FaArrowRight, FaTimes } from 'react-icons/fa';
+// --- 1. Importar FaCheck y FaTimes ---
+import { FaArrowRight, FaTimes, FaCheck } from 'react-icons/fa';
 import './RelacionarColumnasPlayer.css';
 
 // --- COMPONENTE MODIFICADO ---
-const RelacionarColumnasPlayer = ({ pregunta, respuestaActual, onRespuestaChange }) => {
+const RelacionarColumnasPlayer = ({ 
+    pregunta, 
+    respuestaActual, 
+    onRespuestaChange,
+    mode = 'examen',
+    respuestaCorrecta,
+    puntosObtenidos
+}) => {
     // 'datos_extra' tiene { columnaA: [], columnaB: [] }
     const { datos_extra, pregunta: texto_pregunta } = pregunta;
     const { columnaA = [], columnaB = [] } = datos_extra || {};
@@ -23,8 +31,8 @@ const RelacionarColumnasPlayer = ({ pregunta, respuestaActual, onRespuestaChange
 
     // Manejar clic en Columna A
     const handleSelectColA = (itemA, indexA) => {
-        // Si ya está emparejado, no hacer nada (debe borrar primero)
-        if (pares[indexA] !== undefined) return;
+        // Si está en revisión o ya está emparejado, no hacer nada (debe borrar primero)
+        if (mode === 'revision' || pares[indexA] !== undefined) return;
         
         // Si hace clic en el ya seleccionado, lo deselecciona
         if (seleccionA && seleccionA.index === indexA) {
@@ -36,8 +44,8 @@ const RelacionarColumnasPlayer = ({ pregunta, respuestaActual, onRespuestaChange
 
     // Manejar clic en Columna B
     const handleSelectColB = (itemB, indexB) => {
-        // Si no hay nada seleccionado en A, no hacer nada
-        if (!seleccionA) return;
+        // Si está en revisión o no hay nada seleccionado en A, no hacer nada
+        if (mode === 'revision' || !seleccionA) return;
 
         // Si el itemB ya está en un par, no permitir (evita pares duplicados en B)
         const bYaUsado = Object.values(pares).includes(indexB);
@@ -59,6 +67,8 @@ const RelacionarColumnasPlayer = ({ pregunta, respuestaActual, onRespuestaChange
 
     // Quitar un par
     const handleClearPair = (indexA) => {
+        if (mode === 'revision') return;
+
         const nuevosPares = { ...pares };
         delete nuevosPares[indexA]; // Elimina la llave (e.g., '0')
 
@@ -84,22 +94,42 @@ const RelacionarColumnasPlayer = ({ pregunta, respuestaActual, onRespuestaChange
                     <h4>Columna A</h4>
                     {columnaA.map((itemA, indexA) => {
                         const estaSeleccionado = seleccionA?.index === indexA;
-                        const estaEmparejado = getParIndexB(indexA) !== undefined;
+                        const parIndexB = getParIndexB(indexA);
+                        const estaEmparejado = parIndexB !== undefined;
+
+                        // --- 2. Lógica de Revisión ---
+                        let esCorrecto = false;
+                        if (mode === 'revision' && respuestaCorrecta?.pares) {
+                            esCorrecto = (parIndexB === respuestaCorrecta.pares[indexA]);
+                        }
 
                         return (
                             <div 
                                 key={indexA} 
-                                className={`col-item ${estaSeleccionado ? 'selected' : ''} ${estaEmparejado ? 'paired' : ''}`}
+                                className={`
+                                    col-item 
+                                    ${estaSeleccionado ? 'selected' : ''} 
+                                    ${estaEmparejado ? 'paired' : ''}
+                                    ${mode === 'revision' ? 'disabled' : ''}
+                                    ${mode === 'revision' && esCorrecto ? 'par-correcto' : ''}
+                                    ${mode === 'revision' && !esCorrecto ? 'par-incorrecto' : ''}
+                                `}
                                 onClick={() => handleSelectColA(itemA, indexA)}
                             >
                                 {itemA}
-                                {estaEmparejado && (
+                                {estaEmparejado && mode === 'examen' && (
                                     <button 
                                         className="clear-pair-btn"
                                         onClick={(e) => { e.stopPropagation(); handleClearPair(indexA); }}
                                     >
                                         <FaTimes />
                                     </button>
+                                )}
+                                {/* --- 3. Icono de Revisión --- */}
+                                {mode === 'revision' && (
+                                    <span className="revision-icon">
+                                        {esCorrecto ? <FaCheck /> : <FaTimes />}
+                                    </span>
                                 )}
                             </div>
                         );
@@ -120,15 +150,36 @@ const RelacionarColumnasPlayer = ({ pregunta, respuestaActual, onRespuestaChange
                         return (
                             <div 
                                 key={indexB} 
-                                className={`col-item ${estaEmparejado ? 'paired' : ''} ${seleccionA ? 'clickable' : ''}`}
+                                className={`
+                                    col-item 
+                                    ${estaEmparejado ? 'paired' : ''} 
+                                    ${(seleccionA && !estaEmparejado) ? 'clickable' : ''}
+                                    ${mode === 'revision' ? 'disabled' : ''}
+                                `}
                                 onClick={() => handleSelectColB(itemB, indexB)}
                             >
                                 {itemB}
                             </div>
                         );
-                    ))}
+                    })}
+                    
                 </div>
             </div>
+
+            
+            {/* --- 4. Mostrar Respuesta Correcta (si falló) --- */}
+            {mode === 'revision' && puntosObtenidos < (pregunta.puntos || 100) && (
+                <div className="revision-correcta-container">
+                    <h4>Respuestas Correctas:</h4>
+                    <ul>
+                        {columnaA.map((itemA, indexA) => (
+                            <li key={indexA}>
+                                <strong>{itemA}</strong> <FaArrowRight /> {columnaB[respuestaCorrecta.pares[indexA]]}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
         </div>
     );
 };
